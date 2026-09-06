@@ -3,10 +3,9 @@
 一套共用同一抽牌／起卦契約的塔羅牌與梅花易數隨機工具：
 
 - `index.html`：瀏覽器／手機直接操作的 Web UI。
-- `randomizer.py`：供 ChatGPT、AI sandbox、CLI 或其他 Python runtime 執行的 canonical Python implementation。
-- `api/draw.py`：Vercel HTTP adapter；直接 import `randomizer.py` 的 canonical functions，不另維護第三份 RNG／牌組／卦表實作。
+- `randomizer.py`：供 ChatGPT、AI sandbox、CLI 或其他 Python runtime 執行的標準庫版本。
 
-三種入口都維持相同的核心規則：完整 78 張塔羅牌、單題內不重複、每題重新洗完整牌組、固定正逆位隨機，以及梅花雙數 A/B 起卦契約。
+兩種入口都維持相同的核心規則：完整 78 張塔羅牌、單題內不重複、每題重新洗完整牌組、固定正逆位隨機，以及梅花雙數 A/B 起卦契約。
 
 ## 線上使用
 
@@ -50,83 +49,6 @@ Vercel：<https://tarot-plum-randomizer-masini1491-9205.vercel.app>
 - 在 raw RNG 階段使用拒絕取樣，避免簡單取模偏差。
 - 塔羅使用 Fisher–Yates 洗牌。
 - 只有瀏覽器沒有 Web Crypto 時才退回 `Math.random()`。
-
-## HTTP API｜ChatGPT / App 快速抽牌入口
-
-`api/draw.py` 提供 `/api/draw`，目標是讓 ChatGPT／App 不必每次重新取得 `randomizer.py` 再 materialize 到 Python sandbox；只要目前 runtime 能直接呼叫已部署 endpoint，即可取得結構化 Draw/Cast Fact。
-
-**Authority boundary：** API 只是 transport adapter。RNG、牌組、梅花公式與 payload packaging 仍由 root `randomizer.py` 維護；`api/draw.py` 只 import `make_result()`／`package()`，不複製 canonical algorithm。
-
-支援 GET 與 POST，回應固定 `Cache-Control: no-store`。
-
-### Tarot
-
-```text
-GET /api/draw?method=tarot&count=5
-```
-
-POST：
-
-```json
-{
-  "method": "tarot",
-  "count": 5
-}
-```
-
-### Meihua
-
-```text
-GET /api/draw?method=plum
-```
-
-### Tarot + Meihua
-
-```text
-GET /api/draw?method=both&count=6
-```
-
-### Batch
-
-```text
-GET /api/draw?method=batch&counts=5,5,6,3&batch_method=tarot
-```
-
-或：
-
-```json
-{
-  "method": "batch",
-  "counts": [5, 5, 6, 3],
-  "batch_method": "both"
-}
-```
-
-每個 batch child 都由 `make_result()` 建立新的 draw identity；Tarot 仍每題重新洗完整 78 張牌。
-
-### API provenance
-
-API payload 延續 `randomizer.py` 的：
-
-- `source`
-- `algorithm_version`
-- `schema_version`
-- `runtime_source_commit`
-- `generated_at_utc`
-- `generated_at_taipei`
-- `timezone`
-- `rng`
-- `results`
-
-並另加：
-
-```text
-transport: vercel-api
-api_version: 1
-endpoint: /api/draw
-```
-
-Vercel Git deployment 有提供 commit SHA 時，API 會把它帶入 `runtime_source_commit`；不可得時維持 `unknown`，不補造 provenance。
 
 ## Python / AI Runtime CLI
 
@@ -193,7 +115,7 @@ JSON 會包含：
 - 每張正／逆位另做一次獨立二元抽取。
 - 每個 question identity 都建立新的完整牌組 shuffle。
 
-Web 與 Python 使用不同平台 RNG API，因此不追求相同輸入產生相同牌序；它們追求的是**相同抽牌／起卦契約與無人工挑牌**。HTTP API 直接使用 Python canonical implementation，因此其 algorithm semantics 與 CLI 相同。
+Web 與 Python 使用不同平台 RNG API，因此不追求相同輸入產生相同牌序；它們追求的是**相同抽牌／起卦契約與無人工挑牌**。
 
 ## 驗證
 
@@ -233,26 +155,24 @@ python -m unittest -v test_randomizer.py
 
 ```text
 .
-├── api/
-│   └── draw.py          # Vercel HTTP adapter；import canonical Python core
-├── index.html           # Web UI
-├── randomizer.py        # canonical Python / ChatGPT runtime implementation
-├── test_randomizer.py   # 標準庫 unittest invariants
+├── index.html          # Web UI
+├── randomizer.py       # Python / ChatGPT runtime CLI
+├── test_randomizer.py  # 標準庫 unittest invariants
 └── README.md
 ```
 
-Web UI 本身仍不需要 Python；`/api/draw` 部署為獨立 Vercel Python Function。Python CLI 仍保留作本機／ChatGPT sandbox fallback。
+Web 部署不需要 Python；Vercel 主要入口仍是 `index.html`。Python CLI 是獨立的 runtime／AI 使用入口。
 
 ## 與 Playbook 的責任分工
 
-- **本 Repo**：負責 deterministic algorithm implementation、抽牌／起卦、API transport adapter 與結果格式化。
-- **`masini1491/tarot-meihua-question-playbook`**：負責題目契約、何時允許 ChatGPT 自行執行 runtime draw、execution path 選擇、來源紀錄、補占紀律與解讀治理。
+- **本 Repo**：負責 deterministic algorithm implementation、抽牌／起卦與結果格式化。
+- **`masini1491/tarot-meihua-question-playbook`**：負責題目契約、何時允許 ChatGPT 自行執行 runtime draw、來源紀錄、補占紀律與解讀治理。
 
-語言模型能寫出牌名不等於已完成隨機抽牌。若 ChatGPT 宣稱使用 Runtime Draw，應能指出實際執行來源；所有 execution adapters 都必須先固定題目／牌位契約再抽取。
+語言模型能寫出牌名不等於已完成隨機抽牌。若 ChatGPT 宣稱使用 Runtime Draw，應能指出實際執行來源；執行環境不可用時，應回退到 Web UI／使用者自行抽牌，而不是假裝執行。
 
 ## 部署
 
-GitHub `main` 分支與 Vercel 已連動；更新 `main` 後會自動觸發部署。`index.html` 提供 Web UI，`api/draw.py` 由 Vercel 作為 Python Function 提供 `/api/draw`。
+GitHub `main` 分支與 Vercel 已連動；更新 `main` 後會自動觸發 Web UI 部署。`randomizer.py` 不參與瀏覽器頁面建置。
 
 ## 語言
 
