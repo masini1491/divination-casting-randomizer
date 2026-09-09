@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Tarot + Plum Randomizer CLI for AI/runtime use.
+"""Divination Casting Randomizer CLI for AI/runtime use.
 
-Standard-library only. Tarot draws use a 78-card deck, independent
-upright/reversed orientation, and a fresh Fisher-Yates shuffle per question.
-Meihua uses two random integers A/B in 000-999:
-A % 8 -> upper trigram, B % 8 -> lower trigram, (A+B) % 6 -> moving line,
-with remainder 0 mapped to Kun / line 6.
+Standard-library only. Current canonical methods are Tarot and Meihua.
+Tarot draws use a 78-card deck, independent upright/reversed orientation,
+and a fresh Fisher-Yates shuffle per question. Meihua uses two random
+integers A/B in 000-999: A % 8 -> upper trigram, B % 8 -> lower trigram,
+(A+B) % 6 -> moving line, with remainder 0 mapped to Kun / line 6.
 """
 
 from __future__ import annotations
@@ -17,9 +17,9 @@ from datetime import datetime, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
-SOURCE = "tarot-plum-randomizer-python"
+SOURCE = "divination-casting-randomizer-python"
 ALGORITHM_VERSION = "1"
-SCHEMA_VERSION = "2"
+SCHEMA_VERSION = "3"
 TAIPEI_TZ = ZoneInfo("Asia/Taipei")
 
 MAJORS = [
@@ -209,7 +209,7 @@ def add_common_format(parser: argparse.ArgumentParser) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Tarot + Plum Randomizer CLI (standard library only)"
+        description="Divination Casting Randomizer CLI (standard library only)"
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
