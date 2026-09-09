@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Canonical stochastic casting CLI for divination."""
+"""Canonical stochastic casting CLI and importable runtime API for divination."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 SOURCE = "divination-casting-randomizer-python"
 ALGORITHM_VERSION = "2"
 SCHEMA_VERSION = "4"
+AI_SCHEMA_VERSION = "1"
 TAIPEI_TZ = ZoneInfo("Asia/Taipei")
 SUPPORTED_METHODS = ("tarot", "plum", "liuyao")
 
@@ -183,6 +184,92 @@ def package(results: list[dict[str, Any]], source_commit: str | None = None) -> 
     }
 
 
+def compact_ai_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Project a full canonical payload into a low-token AI transport shape.
+
+    This does not change stochastic results. It intentionally omits redundant
+    descriptive fields; use full JSON when audit-grade raw metadata is needed.
+    """
+    compact_results: list[dict[str, Any]] = []
+    for result in payload["results"]:
+        compact: dict[str, Any] = {"method": result["method"]}
+        tarot = result.get("tarot")
+        if tarot:
+            compact["tarot"] = {
+                "count": tarot["count"],
+                "cards": [[card["full_name"], card["orientation"]] for card in tarot["cards"]],
+            }
+        plum = result.get("plum")
+        if plum:
+            compact["plum"] = {
+                "a": plum["a"],
+                "b": plum["b"],
+                "upper": plum["upper_trigram"],
+                "lower": plum["lower_trigram"],
+                "hexagram": plum["hexagram"],
+                "moving_line": plum["moving_line"],
+            }
+        liuyao = result.get("liuyao")
+        if liuyao:
+            compact["liuyao"] = {
+                "cast_method": liuyao["cast_method"],
+                "line_order": liuyao["line_order"],
+                "values": [line["value"] for line in liuyao["lines"]],
+                "coin_values": [line["coin_values"] for line in liuyao["lines"]],
+            }
+        compact_results.append(compact)
+    return {
+        "source": payload["source"],
+        "algorithm_version": payload["algorithm_version"],
+        "schema_version": payload["schema_version"],
+        "ai_schema_version": AI_SCHEMA_VERSION,
+        "runtime_source_commit": payload["runtime_source_commit"],
+        "generated_at_taipei": payload["generated_at_taipei"],
+        "timezone": payload["timezone"],
+        "results": compact_results,
+    }
+
+
+def validate_repeat(repeat: int) -> None:
+    if repeat < 1 or repeat > 100:
+        raise ValueError("--repeat must be between 1 and 100")
+
+
+def generate_payload(
+    command: str,
+    *,
+    count: int = 3,
+    repeat: int = 1,
+    counts: list[int] | None = None,
+    method: str = "tarot",
+    source_commit: str | None = None,
+) -> dict[str, Any]:
+    """Import-friendly execution API that avoids CLI/subprocess overhead."""
+    if command == "tarot":
+        validate_repeat(repeat)
+        results = [make_result("tarot", count) for _ in range(repeat)]
+    elif command == "plum":
+        validate_repeat(repeat)
+        results = [make_result("plum") for _ in range(repeat)]
+    elif command == "liuyao":
+        validate_repeat(repeat)
+        results = [make_result("liuyao") for _ in range(repeat)]
+    elif command == "both":
+        validate_repeat(repeat)
+        results = [make_result("both", count) for _ in range(repeat)]
+    elif command == "batch":
+        if not counts:
+            raise ValueError("counts are required for batch")
+        if method not in {"tarot", "both"}:
+            raise ValueError("batch method must be tarot or both")
+        if any(value < 1 or value > 24 for value in counts):
+            raise ValueError("each count must be between 1 and 24")
+        results = [make_result(method, value) for value in counts]
+    else:
+        raise ValueError(f"unsupported command: {command}")
+    return package(results, source_commit=source_commit)
+
+
 def render_text(payload: dict[str, Any]) -> str:
     lines = [
         f"來源：{payload['source']} v{payload['algorithm_version']}",
@@ -231,7 +318,7 @@ def parse_counts(raw: str) -> list[int]:
 
 
 def add_common_format(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--format", choices=("text", "json"), default="text")
+    parser.add_argument("--format", choices=("text", "json", "ai-json"), default="text")
     parser.add_argument("--source-commit", default=None)
 
 
@@ -265,33 +352,26 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def validate_repeat(repeat: int) -> None:
-    if repeat < 1 or repeat > 100:
-        raise ValueError("--repeat must be between 1 and 100")
-
-
 def main() -> int:
     args = build_parser().parse_args()
     try:
-        if args.command == "tarot":
-            validate_repeat(args.repeat)
-            results = [make_result("tarot", args.count) for _ in range(args.repeat)]
-        elif args.command == "plum":
-            validate_repeat(args.repeat)
-            results = [make_result("plum") for _ in range(args.repeat)]
-        elif args.command == "liuyao":
-            validate_repeat(args.repeat)
-            results = [make_result("liuyao") for _ in range(args.repeat)]
-        elif args.command == "both":
-            validate_repeat(args.repeat)
-            results = [make_result("both", args.count) for _ in range(args.repeat)]
-        else:
-            results = [make_result(args.method, count) for count in args.counts]
+        payload = generate_payload(
+            args.command,
+            count=getattr(args, "count", 3),
+            repeat=getattr(args, "repeat", 1),
+            counts=getattr(args, "counts", None),
+            method=getattr(args, "method", "tarot"),
+            source_commit=args.source_commit,
+        )
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
 
-    payload = package(results, source_commit=args.source_commit)
-    print(json.dumps(payload, ensure_ascii=False, indent=2) if args.format == "json" else render_text(payload))
+    if args.format == "text":
+        print(render_text(payload))
+    elif args.format == "ai-json":
+        print(json.dumps(compact_ai_payload(payload), ensure_ascii=False, separators=(",", ":")))
+    else:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
 
 
