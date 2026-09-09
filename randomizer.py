@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""Divination Casting Randomizer CLI for AI/runtime use.
-
-Standard-library only. Current canonical methods are Tarot and Meihua.
-Tarot draws use a 78-card deck, independent upright/reversed orientation,
-and a fresh Fisher-Yates shuffle per question. Meihua uses two random
-integers A/B in 000-999: A % 8 -> upper trigram, B % 8 -> lower trigram,
-(A+B) % 6 -> moving line, with remainder 0 mapped to Kun / line 6.
-"""
+"""Canonical stochastic casting CLI for divination."""
 
 from __future__ import annotations
 
@@ -18,9 +11,10 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 SOURCE = "divination-casting-randomizer-python"
-ALGORITHM_VERSION = "1"
-SCHEMA_VERSION = "3"
+ALGORITHM_VERSION = "2"
+SCHEMA_VERSION = "4"
 TAIPEI_TZ = ZoneInfo("Asia/Taipei")
+SUPPORTED_METHODS = ("tarot", "plum", "liuyao")
 
 MAJORS = [
     "愚者", "魔術師", "女祭司", "女皇", "皇帝", "教皇", "戀人", "戰車", "力量", "隱者",
@@ -30,17 +24,10 @@ MAJORS = [
 RANKS = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "侍者", "騎士", "皇后", "國王"]
 SUITS = ["杖", "杯", "劍", "錢"]
 DECK = MAJORS + [f"{suit}{rank}" for suit in SUITS for rank in RANKS]
-
-MAJOR_SHORT = {
-    "魔術師": "魔術",
-    "女祭司": "女祭",
-    "命運之輪": "命輪",
-    "倒吊人": "吊人",
-}
+MAJOR_SHORT = {"魔術師": "魔術", "女祭司": "女祭", "命運之輪": "命輪", "倒吊人": "吊人"}
 COURT_SHORT = {"侍者": "侍", "騎士": "騎", "皇后": "后", "國王": "王"}
 
 TRIGRAM = {1: "乾", 2: "兌", 3: "離", 4: "震", 5: "巽", 6: "坎", 7: "艮", 0: "坤"}
-
 HEXAGRAM = {
     "乾乾":"乾為天","坤坤":"坤為地","坎震":"水雷屯","艮坎":"山水蒙","坎乾":"水天需","乾坎":"天水訟",
     "坤坎":"地水師","坎坤":"水地比","巽乾":"風天小畜","乾兌":"天澤履","坤乾":"地天泰","乾坤":"天地否",
@@ -55,6 +42,13 @@ HEXAGRAM = {
     "巽兌":"風澤中孚","震艮":"雷山小過","坎離":"水火既濟","離坎":"火水未濟",
 }
 
+LIUYAO_POSITION_NAMES = ("初爻", "二爻", "三爻", "四爻", "五爻", "上爻")
+LIUYAO_LINE_META = {
+    6: ("yin", True, "老陰"),
+    7: ("yang", False, "少陽"),
+    8: ("yin", False, "少陰"),
+    9: ("yang", True, "老陽"),
+}
 UINT32_RANGE = 1 << 32
 
 
@@ -66,7 +60,6 @@ def randbelow(max_value: int) -> int:
         return 0
     if max_value > UINT32_RANGE:
         return secrets.randbelow(max_value)
-
     limit = UINT32_RANGE - (UINT32_RANGE % max_value)
     while True:
         value = secrets.randbits(32)
@@ -95,12 +88,10 @@ def short_name(name: str) -> str:
 def draw_tarot(count: int) -> dict[str, Any]:
     if not 1 <= count <= 24:
         raise ValueError("Tarot count must be between 1 and 24.")
-
     chosen = fisher_yates(DECK)[:count]
     cards = []
     for index, full_name in enumerate(chosen, start=1):
-        reversed_ = randbelow(2) == 1
-        orientation = "逆" if reversed_ else "正"
+        orientation = "逆" if randbelow(2) else "正"
         short = short_name(full_name)
         cards.append({
             "index": index,
@@ -113,45 +104,79 @@ def draw_tarot(count: int) -> dict[str, Any]:
 
 
 def cast_plum() -> dict[str, Any]:
-    a = randbelow(1000)
-    b = randbelow(1000)
-    upper = TRIGRAM[a % 8]
-    lower = TRIGRAM[b % 8]
-    moving_remainder = (a + b) % 6
-    moving_line = 6 if moving_remainder == 0 else moving_remainder
-    name = HEXAGRAM[upper + lower]
-
+    a, b = randbelow(1000), randbelow(1000)
+    upper, lower = TRIGRAM[a % 8], TRIGRAM[b % 8]
+    rem = (a + b) % 6
+    moving_line = 6 if rem == 0 else rem
     return {
         "a": f"{a:03d}",
         "b": f"{b:03d}",
         "upper_trigram": upper,
         "lower_trigram": lower,
-        "hexagram": name,
+        "hexagram": HEXAGRAM[upper + lower],
         "moving_line": moving_line,
         "casting_rule": "A%8→上卦；B%8→下卦；(A+B)%6→動爻；餘0分別視為坤／第6爻",
+    }
+
+
+def resolve_liuyao_coin_values(coin_values: list[int] | tuple[int, int, int]) -> dict[str, Any]:
+    """Resolve one three-coin toss using canonical yin=2 / yang=3 mapping."""
+    if len(coin_values) != 3 or any(v not in {2, 3} for v in coin_values):
+        raise ValueError("Liuyao coin values must be exactly three values, each 2 or 3.")
+    values = list(coin_values)
+    line_value = sum(values)
+    yin_yang, changing, line_type = LIUYAO_LINE_META[line_value]
+    return {
+        "coin_values": values,
+        "coin_faces": ["yin" if v == 2 else "yang" for v in values],
+        "value": line_value,
+        "yin_yang": yin_yang,
+        "changing": changing,
+        "line_type": line_type,
+    }
+
+
+def cast_liuyao_coins() -> dict[str, Any]:
+    """Cast six lines bottom-to-top with three independent fair coins per line."""
+    lines = []
+    for position, position_name in enumerate(LIUYAO_POSITION_NAMES, start=1):
+        values = [2 if randbelow(2) == 0 else 3 for _ in range(3)]
+        line = resolve_liuyao_coin_values(values)
+        line.update({"position": position, "position_name": position_name})
+        lines.append(line)
+    return {
+        "cast_method": "three-coins",
+        "line_order": "bottom-to-top",
+        "coin_mapping": {"yin": 2, "yang": 3},
+        "casting_rule": "每爻三枚獨立公平銅錢；陰=2、陽=3；合計6/7/8/9；6=老陰動、7=少陽靜、8=少陰靜、9=老陽動；由初爻至上爻起卦",
+        "lines": lines,
     }
 
 
 def make_result(method: str, count: int | None = None) -> dict[str, Any]:
     result: dict[str, Any] = {"method": method}
     if method in {"tarot", "both"}:
-        assert count is not None
+        if count is None:
+            raise ValueError("Tarot count is required.")
         result["tarot"] = draw_tarot(count)
     if method in {"plum", "both"}:
         result["plum"] = cast_plum()
+    if method == "liuyao":
+        result["liuyao"] = cast_liuyao_coins()
     return result
 
 
 def package(results: list[dict[str, Any]], source_commit: str | None = None) -> dict[str, Any]:
-    generated_at_utc_dt = datetime.now(timezone.utc)
-    generated_at_taipei_dt = generated_at_utc_dt.astimezone(TAIPEI_TZ)
+    utc = datetime.now(timezone.utc)
+    taipei = utc.astimezone(TAIPEI_TZ)
     return {
         "source": SOURCE,
         "algorithm_version": ALGORITHM_VERSION,
         "schema_version": SCHEMA_VERSION,
+        "supported_methods": list(SUPPORTED_METHODS),
         "runtime_source_commit": source_commit or "unknown",
-        "generated_at_utc": generated_at_utc_dt.isoformat(timespec="seconds"),
-        "generated_at_taipei": generated_at_taipei_dt.isoformat(timespec="seconds"),
+        "generated_at_utc": utc.isoformat(timespec="seconds"),
+        "generated_at_taipei": taipei.isoformat(timespec="seconds"),
         "timezone": "Asia/Taipei",
         "rng": "secrets.randbits(32) + rejection sampling",
         "results": results,
@@ -164,25 +189,32 @@ def render_text(payload: dict[str, Any]) -> str:
         f"時間：{payload['generated_at_taipei']}",
     ]
     results = payload["results"]
-
     for idx, result in enumerate(results, start=1):
         if len(results) > 1:
             lines.extend(["", f"第 {idx} 題"])
-
         tarot = result.get("tarot")
         if tarot:
             lines.append(f"塔羅（{tarot['count']} 張）")
-            lines.append("，".join(card["shorthand"] for card in tarot["cards"]))
-
+            lines.append("，".join(c["shorthand"] for c in tarot["cards"]))
         plum = result.get("plum")
         if plum:
-            lines.append("梅花易數｜雙數起卦")
-            lines.append(f"{plum['a']}，{plum['b']}")
-            lines.append(f"本卦：{plum['hexagram']}")
-            lines.append(f"上卦：{plum['upper_trigram']}")
-            lines.append(f"下卦：{plum['lower_trigram']}")
-            lines.append(f"動爻：第 {plum['moving_line']} 爻")
-            lines.append(f"取卦規則：{plum['casting_rule']}")
+            lines.extend([
+                "梅花易數｜雙數起卦",
+                f"{plum['a']}，{plum['b']}",
+                f"本卦：{plum['hexagram']}",
+                f"上卦：{plum['upper_trigram']}",
+                f"下卦：{plum['lower_trigram']}",
+                f"動爻：第 {plum['moving_line']} 爻",
+                f"取卦規則：{plum['casting_rule']}",
+            ])
+        liuyao = result.get("liuyao")
+        if liuyao:
+            lines.append("六爻｜三錢法")
+            for line in liuyao["lines"]:
+                state = "動" if line["changing"] else "靜"
+                coins = "/".join("陽" if f == "yang" else "陰" for f in line["coin_faces"])
+                lines.append(f"{line['position_name']}：{line['value']} {line['line_type']}（{state}）｜{coins}")
+            lines.append(f"起卦規則：{liuyao['casting_rule']}")
     return "\n".join(lines)
 
 
@@ -200,55 +232,46 @@ def parse_counts(raw: str) -> list[int]:
 
 def add_common_format(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--format", choices=("text", "json"), default="text")
-    parser.add_argument(
-        "--source-commit",
-        default=None,
-        help="GitHub commit SHA for the canonical randomizer.py used by this run",
-    )
+    parser.add_argument("--source-commit", default=None)
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Divination Casting Randomizer CLI (standard library only)"
-    )
+    parser = argparse.ArgumentParser(description="Divination Casting Randomizer CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_tarot = sub.add_parser("tarot", help="draw Tarot cards")
+    p_tarot = sub.add_parser("tarot")
     p_tarot.add_argument("--count", type=int, default=3)
     p_tarot.add_argument("--repeat", type=int, default=1)
     add_common_format(p_tarot)
 
-    p_plum = sub.add_parser("plum", help="cast Meihua with A/B double-number method")
+    p_plum = sub.add_parser("plum")
     p_plum.add_argument("--repeat", type=int, default=1)
     add_common_format(p_plum)
 
-    p_both = sub.add_parser("both", help="draw Tarot and cast Meihua independently")
+    p_liuyao = sub.add_parser("liuyao")
+    p_liuyao.add_argument("--method", choices=("coins",), default="coins")
+    p_liuyao.add_argument("--repeat", type=int, default=1)
+    add_common_format(p_liuyao)
+
+    p_both = sub.add_parser("both")
     p_both.add_argument("--count", type=int, default=3)
     p_both.add_argument("--repeat", type=int, default=1)
     add_common_format(p_both)
 
-    p_batch = sub.add_parser(
-        "batch",
-        help="multiple independent questions with per-question Tarot counts",
-    )
-    p_batch.add_argument("--counts", type=parse_counts, required=True,
-                         help="comma-separated Tarot counts, e.g. 5,5,6,3")
+    p_batch = sub.add_parser("batch")
+    p_batch.add_argument("--counts", type=parse_counts, required=True)
     p_batch.add_argument("--method", choices=("tarot", "both"), default="tarot")
     add_common_format(p_batch)
-
     return parser
 
 
 def validate_repeat(repeat: int) -> None:
-    if repeat < 1:
-        raise ValueError("--repeat must be >= 1")
-    if repeat > 100:
-        raise ValueError("--repeat must be <= 100")
+    if repeat < 1 or repeat > 100:
+        raise ValueError("--repeat must be between 1 and 100")
 
 
 def main() -> int:
     args = build_parser().parse_args()
-
     try:
         if args.command == "tarot":
             validate_repeat(args.repeat)
@@ -256,6 +279,9 @@ def main() -> int:
         elif args.command == "plum":
             validate_repeat(args.repeat)
             results = [make_result("plum") for _ in range(args.repeat)]
+        elif args.command == "liuyao":
+            validate_repeat(args.repeat)
+            results = [make_result("liuyao") for _ in range(args.repeat)]
         elif args.command == "both":
             validate_repeat(args.repeat)
             results = [make_result("both", args.count) for _ in range(args.repeat)]
@@ -265,10 +291,7 @@ def main() -> int:
         raise SystemExit(str(exc)) from exc
 
     payload = package(results, source_commit=args.source_commit)
-    if args.format == "json":
-        print(json.dumps(payload, ensure_ascii=False, indent=2))
-    else:
-        print(render_text(payload))
+    print(json.dumps(payload, ensure_ascii=False, indent=2) if args.format == "json" else render_text(payload))
     return 0
 
 

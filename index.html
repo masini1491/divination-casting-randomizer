@@ -1,30 +1,170 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>塔羅牌＋梅花易數 v9.8</title><style>
-:root{--bg:#f7f4ee;--panel:#fffdf8;--ink:#2c2925;--muted:#7b746d;--line:#ddd5ca;--accent:#d66f34;--dark:#b95725;--green:#88a936}*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);color:var(--ink);overflow-x:hidden;font-family:"Noto Serif TC","PingFang TC","Microsoft JhengHei",serif}.wrap{width:100%;max-width:1000px;margin:auto;padding:24px 14px 40px}h1{margin:0 0 6px;font-size:clamp(28px,4vw,42px)}.sub,.muted{color:var(--muted)}.sub{margin-bottom:18px;line-height:1.6}.box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}.head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.title{font-weight:700;margin-bottom:10px}textarea,select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:#fff;border:1px solid #cbc3b9;border-radius:10px;padding:11px 12px;outline:none}textarea{min-height:88px;resize:vertical}button{border:0;border-radius:10px;padding:12px 15px;min-height:46px;font:inherit;cursor:pointer;touch-action:manipulation}.secondary,.add{background:#ebe6df;color:var(--ink)}.tarot{background:#2f2c29;color:#fff}.plum{background:var(--green);color:#fff}.both{background:linear-gradient(135deg,var(--accent),var(--dark));color:#fff;font-weight:700}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.cardbox{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}.utils{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}.rule{background:#f5f1eb;border-radius:10px;padding:11px;line-height:1.6;font-size:.92rem}.resultTitle{display:flex;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:16px;margin-top:18px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin-top:10px}.card{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px;min-height:110px;display:flex;flex-direction:column;justify-content:space-between}.small{font-size:.82rem;color:var(--muted)}.name{font-size:1.08rem;font-weight:700}.up{color:#397437}.rev{color:#a34737}.nums{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.num{flex:1 1 110px;text-align:center;border:2px solid var(--green);border-radius:12px;background:#fff;padding:12px;font-size:1.8rem;font-family:monospace}.detail,.preview{background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;margin-top:10px;line-height:1.7}.preview{white-space:pre-wrap;border-style:dashed;overflow-wrap:anywhere}.batchList{display:grid;gap:10px;margin-top:12px}.batchItem{display:grid;grid-template-columns:minmax(0,1fr) 105px 44px;gap:8px;align-items:end;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}.batchItem textarea{min-height:70px}.batchResult{background:#f9f7f2;border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}.batchQuestion{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--line);line-height:1.5}.batchQuestion strong{font-size:1.02rem}.batchResult .cards{margin-top:12px}.remove{width:44px;padding:0}.notice{min-height:1.2em;margin-top:8px;color:var(--dark)}[hidden]{display:none!important}
-@media(max-width:760px){.wrap{padding:16px 10px 30px}.box{padding:14px}.grid2{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.actions button{width:100%}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.batchItem{grid-template-columns:1fr}.batchItem .remove{width:100%}.utils{display:grid;grid-template-columns:1fr}.utils button{width:100%}.row2{grid-template-columns:1fr}.resultTitle{flex-direction:column}.qhead{align-items:flex-start}.batchQuestion{flex-direction:column;gap:4px}}@media(max-width:350px){.cards{grid-template-columns:1fr}}
-</style></head><body><div class="wrap"><h1>塔羅牌＋梅花易數</h1><div class="sub">支援單題、連續多題塔羅，以及固定雙數起卦的梅花易數。</div>
-<section class="box"><div class="head"><div><div class="title">🃏 連續塔羅｜多題一次抽</div><div class="muted">每題可獨立設定 1～24 張；每一題都重新洗完整副牌。</div></div><div class="utils" style="margin-top:0"><button id="addQ" class="add">＋ 新增題目</button><button id="clearQs" class="secondary">清空題目</button></div></div><div id="batchList" class="batchList"></div><div class="utils"><button id="drawBatch" class="both">連續抽全部題目</button><button id="copyBatch" class="secondary">複製連續結果</button><button id="clearBatch" class="secondary">清除連續結果</button></div><div id="batchNotice" class="notice"></div><div class="resultTitle"><strong>連續抽牌結果</strong><span id="batchTime" class="muted"></span></div><div id="batchResult"><div class="muted">尚未抽取。</div></div><div id="batchPreview" class="preview" hidden></div></section>
-<section class="box"><div class="title">單題｜塔羅／梅花易數</div><div class="qhead"><label for="question">題目</label><button id="clearQuestion" class="secondary">清空題目</button></div><textarea id="question" placeholder="輸入這次要問的問題……"></textarea><div class="grid2"><div class="cardbox"><div class="title">🃏 塔羅設定</div><div class="row2"><div><label for="count">抽幾張</label><select id="count"></select></div><div><label>正逆位</label><div style="padding-top:12px"><strong>固定啟用</strong><div class="muted" style="margin-top:4px">每張牌隨機正位／逆位，不提供關閉。</div></div></div></div></div><div class="cardbox"><div class="title">☯ 梅花易數｜固定雙數起卦</div><div class="rule">隨機抽兩個 000～999 數字 A、B。<br>A÷8→上卦；B÷8→下卦；(A+B)÷6→動爻。<br>餘 0 分別視為坤／第 6 爻。</div></div></div><div class="actions"><button id="drawTarot" class="tarot">只抽塔羅</button><button id="drawPlum" class="plum">只抽梅花</button><button id="drawBoth" class="both">同時抽塔羅＋梅花</button></div><div class="utils"><button id="copyOne" class="secondary">複製本次結果</button><button id="clearOne" class="secondary">清除結果</button></div><div id="notice" class="notice"></div><div class="resultTitle"><strong>本次結果</strong><span id="oneTime" class="muted"></span></div><div id="oneResult"><div class="muted">尚未抽取。</div></div><div id="onePreview" class="preview" hidden></div></section></div>
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Divination Casting Randomizer</title>
+<style>
+:root{--bg:#f7f4ee;--panel:#fffdf8;--ink:#2c2925;--muted:#7b746d;--line:#ddd5ca;--accent:#d66f34;--dark:#b95725;--green:#88a936;--blue:#526d9b}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Serif TC","PingFang TC","Microsoft JhengHei",serif}
+.wrap{max-width:1050px;margin:auto;padding:24px 14px 40px}h1{margin:0 0 6px;font-size:clamp(28px,4vw,42px)}.sub,.muted{color:var(--muted)}.sub{margin-bottom:18px;line-height:1.6}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}.title{font-weight:700;margin-bottom:10px}
+.head,.qhead,.resultTitle,.batchQuestion{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+textarea,select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:#fff;border:1px solid #cbc3b9;border-radius:10px;padding:11px 12px;outline:none}textarea{min-height:88px;resize:vertical}
+button{border:0;border-radius:10px;padding:12px 15px;min-height:46px;font:inherit;cursor:pointer}.secondary,.add{background:#ebe6df;color:var(--ink)}.tarot{background:#2f2c29;color:#fff}.plum{background:var(--green);color:#fff}.liuyao{background:var(--blue);color:#fff}.both{background:linear-gradient(135deg,var(--accent),var(--dark));color:#fff;font-weight:700}
+.methods{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}.cardbox{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:14px}.utils{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}.rule{background:#f5f1eb;border-radius:10px;padding:11px;line-height:1.6;font-size:.92rem}
+.resultTitle{border-top:1px solid var(--line);padding-top:16px;margin-top:18px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin-top:10px}.card{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px;min-height:105px;display:flex;flex-direction:column;justify-content:space-between}.small{font-size:.82rem;color:var(--muted)}.name{font-size:1.08rem;font-weight:700}.up{color:#397437}.rev{color:#a34737}
+.nums{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.num{flex:1 1 110px;text-align:center;border:2px solid var(--green);border-radius:12px;background:#fff;padding:12px;font-size:1.8rem;font-family:monospace}.detail,.preview{background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;margin-top:10px;line-height:1.7}.preview{white-space:pre-wrap;border-style:dashed;overflow-wrap:anywhere}
+.yaos{display:grid;gap:8px;margin-top:10px}.yao{display:grid;grid-template-columns:72px 80px 90px 1fr;gap:8px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px}.moving{font-weight:700;color:#a34737}.stable{color:#397437}
+.batchList{display:grid;gap:10px;margin-top:12px}.batchItem{display:grid;grid-template-columns:minmax(0,1fr) 105px 44px;gap:8px;align-items:end;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}.batchItem textarea{min-height:70px}.batchResult{background:#f9f7f2;border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}.remove{width:44px;padding:0}.notice{min-height:1.2em;margin-top:8px;color:var(--dark)}[hidden]{display:none!important}
+@media(max-width:820px){.methods{grid-template-columns:1fr}.actions{grid-template-columns:1fr 1fr}.yao{grid-template-columns:64px 70px 80px 1fr}}
+@media(max-width:560px){.wrap{padding:16px 10px 30px}.box{padding:14px}.actions,.row2{grid-template-columns:1fr}.utils{display:grid;grid-template-columns:1fr}.batchItem{grid-template-columns:1fr}.batchItem .remove{width:100%}.yao{grid-template-columns:1fr 1fr}.yao .coins{grid-column:1/-1}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Divination Casting Randomizer</h1>
+<div class="sub">目前支援 Tarot、梅花雙數與六爻三錢法。Randomizer 只產生原始 Draw / Cast Fact，不負責完整命理解讀。</div>
+
+<section class="box">
+  <div class="head">
+    <div>
+      <div class="title">🃏 連續塔羅｜多題一次抽</div>
+      <div class="muted">每題可獨立設定 1～24 張；每一題都重新洗完整副牌。</div>
+    </div>
+    <div class="utils" style="margin-top:0">
+      <button id="addQ" class="add">＋ 新增題目</button>
+      <button id="clearQs" class="secondary">清空題目</button>
+    </div>
+  </div>
+  <div id="batchList" class="batchList"></div>
+  <div class="utils">
+    <button id="drawBatch" class="both">連續抽全部題目</button>
+    <button id="copyBatch" class="secondary">複製連續結果</button>
+    <button id="clearBatch" class="secondary">清除連續結果</button>
+  </div>
+  <div id="batchNotice" class="notice"></div>
+  <div class="resultTitle"><strong>連續抽牌結果</strong><span id="batchTime" class="muted"></span></div>
+  <div id="batchResult"><div class="muted">尚未抽取。</div></div>
+  <div id="batchPreview" class="preview" hidden></div>
+</section>
+
+<section class="box">
+  <div class="title">單題｜Tarot / Meihua / Liuyao</div>
+  <div class="qhead">
+    <label for="question">題目</label>
+    <button id="clearQuestion" class="secondary">清空題目</button>
+  </div>
+  <textarea id="question" placeholder="輸入這次要問的問題……"></textarea>
+
+  <div class="methods">
+    <div class="cardbox">
+      <div class="title">🃏 Tarot</div>
+      <div class="row2">
+        <div><label for="count">抽幾張</label><select id="count"></select></div>
+        <div><label>正逆位</label><div style="padding-top:12px"><strong>固定啟用</strong><div class="muted">每張獨立隨機。</div></div></div>
+      </div>
+    </div>
+    <div class="cardbox">
+      <div class="title">☯ Meihua｜雙數</div>
+      <div class="rule">A、B 各取 000～999。<br>A%8→上卦；B%8→下卦；(A+B)%6→動爻。</div>
+    </div>
+    <div class="cardbox">
+      <div class="title">☰ Liuyao｜三錢法</div>
+      <div class="rule">每爻三枚公平銅錢；陰=2、陽=3。<br>6老陰動、7少陽靜、8少陰靜、9老陽動。<br>由初爻至上爻。</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="drawTarot" class="tarot">只抽 Tarot</button>
+    <button id="drawPlum" class="plum">只起 Meihua</button>
+    <button id="drawLiuyao" class="liuyao">只起 Liuyao</button>
+    <button id="drawBoth" class="both">Tarot + Meihua</button>
+  </div>
+  <div class="utils">
+    <button id="copyOne" class="secondary">複製本次結果</button>
+    <button id="clearOne" class="secondary">清除結果</button>
+  </div>
+  <div id="notice" class="notice"></div>
+  <div class="resultTitle"><strong>本次結果</strong><span id="oneTime" class="muted"></span></div>
+  <div id="oneResult"><div class="muted">尚未抽取。</div></div>
+  <div id="onePreview" class="preview" hidden></div>
+</section>
+</div>
+
 <script>
-(()=>{const $=id=>document.getElementById(id),maj=["愚者","魔術師","女祭司","女皇","皇帝","教皇","戀人","戰車","力量","隱者","命運之輪","正義","倒吊人","死神","節制","惡魔","高塔","星星","月亮","太陽","審判","世界"],r=["一","二","三","四","五","六","七","八","九","十","侍者","騎士","皇后","國王"],s=["杖","杯","劍","錢"],deck=[...maj,...s.flatMap(x=>r.map(y=>x+y))],tri={1:"乾",2:"兌",3:"離",4:"震",5:"巽",6:"坎",7:"艮",0:"坤"},hex={"乾乾":"乾為天","坤坤":"坤為地","坎震":"水雷屯","艮坎":"山水蒙","坎乾":"水天需","乾坎":"天水訟","坤坎":"地水師","坎坤":"水地比","巽乾":"風天小畜","乾兌":"天澤履","坤乾":"地天泰","乾坤":"天地否","乾離":"天火同人","離乾":"火天大有","坤艮":"地山謙","震坤":"雷地豫","兌震":"澤雷隨","艮巽":"山風蠱","坤兌":"地澤臨","巽坤":"風地觀","離震":"火雷噬嗑","艮離":"山火賁","艮坤":"山地剝","坤震":"地雷復","乾震":"天雷無妄","艮乾":"山天大畜","艮震":"山雷頤","兌巽":"澤風大過","坎坎":"坎為水","離離":"離為火","兌艮":"澤山咸","震巽":"雷風恆","乾艮":"天山遯","震乾":"雷天大壯","離坤":"火地晉","坤離":"地火明夷","巽離":"風火家人","離兌":"火澤睽","坎艮":"水山蹇","震坎":"雷水解","艮兌":"山澤損","巽震":"風雷益","兌乾":"澤天夬","乾巽":"天風姤","兌坤":"澤地萃","坤巽":"地風升","兌坎":"澤水困","坎巽":"水風井","兌離":"澤火革","離巽":"火風鼎","震震":"震為雷","艮艮":"艮為山","巽艮":"風山漸","震兌":"雷澤歸妹","震離":"雷火豐","離艮":"火山旅","巽巽":"巽為風","兌兌":"兌為澤","巽坎":"風水渙","坎兌":"水澤節","巽兌":"風澤中孚","震艮":"雷山小過","坎離":"水火既濟","離坎":"火水未濟"};let oneText="",batchText="",seq=0;
-function rnd(max){if(max<=1)return 0;if(crypto&&crypto.getRandomValues){const a=new Uint32Array(1),m=0xffffffff,l=m-(m%max);do crypto.getRandomValues(a);while(a[0]>=l);return a[0]%max}return Math.floor(Math.random()*max)}
-function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
-function time(){let d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`}
+(()=>{
+const $=id=>document.getElementById(id), $$=q=>[...document.querySelectorAll(q)];
+const majors=["愚者","魔術師","女祭司","女皇","皇帝","教皇","戀人","戰車","力量","隱者","命運之輪","正義","倒吊人","死神","節制","惡魔","高塔","星星","月亮","太陽","審判","世界"];
+const ranks=["一","二","三","四","五","六","七","八","九","十","侍者","騎士","皇后","國王"], suits=["杖","杯","劍","錢"];
+const deck=[...majors,...suits.flatMap(s=>ranks.map(r=>s+r))];
+const tri={1:"乾",2:"兌",3:"離",4:"震",5:"巽",6:"坎",7:"艮",0:"坤"};
+const hex={"乾乾":"乾為天","坤坤":"坤為地","坎震":"水雷屯","艮坎":"山水蒙","坎乾":"水天需","乾坎":"天水訟","坤坎":"地水師","坎坤":"水地比","巽乾":"風天小畜","乾兌":"天澤履","坤乾":"地天泰","乾坤":"天地否","乾離":"天火同人","離乾":"火天大有","坤艮":"地山謙","震坤":"雷地豫","兌震":"澤雷隨","艮巽":"山風蠱","坤兌":"地澤臨","巽坤":"風地觀","離震":"火雷噬嗑","艮離":"山火賁","艮坤":"山地剝","坤震":"地雷復","乾震":"天雷無妄","艮乾":"山天大畜","艮震":"山雷頤","兌巽":"澤風大過","坎坎":"坎為水","離離":"離為火","兌艮":"澤山咸","震巽":"雷風恆","乾艮":"天山遯","震乾":"雷天大壯","離坤":"火地晉","坤離":"地火明夷","巽離":"風火家人","離兌":"火澤睽","坎艮":"水山蹇","震坎":"雷水解","艮兌":"山澤損","巽震":"風雷益","兌乾":"澤天夬","乾巽":"天風姤","兌坤":"澤地萃","坤巽":"地風升","兌坎":"澤水困","坎巽":"水風井","兌離":"澤火革","離巽":"火風鼎","震震":"震為雷","艮艮":"艮為山","巽艮":"風山漸","震兌":"雷澤歸妹","震離":"雷火豐","離艮":"火山旅","巽巽":"巽為風","兌兌":"兌為澤","巽坎":"風水渙","坎兌":"水澤節","巽兌":"風澤中孚","震艮":"雷山小過","坎離":"水火既濟","離坎":"火水未濟"};
+const yaoNames=["初爻","二爻","三爻","四爻","五爻","上爻"];
+let oneText="", batchText="", seq=0;
+
+function rnd(max){
+  if(max<=1)return 0;
+  if(globalThis.crypto?.getRandomValues){
+    const a=new Uint32Array(1), range=0x100000000, limit=range-(range%max);
+    do crypto.getRandomValues(a); while(a[0]>=limit);
+    return a[0]%max;
+  }
+  return Math.floor(Math.random()*max);
+}
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function time(){const d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function options(sel=3){return Array.from({length:24},(_,i)=>i+1).map(n=>`<option value="${n}" ${n===sel?"selected":""}>${n} 張</option>`).join("")}
 $("count").innerHTML=options(3);
+
 function tarot(n){return shuffle(deck).slice(0,n).map((name,i)=>({i:i+1,name,rev:rnd(2)===1}))}
-function plum(){let a=rnd(1000),b=rnd(1000),m=(a+b)%6,up=tri[a%8],low=tri[b%8];return{a:String(a).padStart(3,"0"),b:String(b).padStart(3,"0"),up,low,name:hex[up+low],move:m===0?6:m}}
-function shortName(name){const majors={"魔術師":"魔術","女祭司":"女祭","命運之輪":"命輪","倒吊人":"吊人"},courts={"侍者":"侍","騎士":"騎","皇后":"后","國王":"王"};if(majors[name])return majors[name];for(const suit of s){if(name.startsWith(suit)){const rank=name.slice(1);return suit+(courts[rank]||rank)}}return name}
+function plum(){const a=rnd(1000),b=rnd(1000),m=(a+b)%6,up=tri[a%8],low=tri[b%8];return{a:String(a).padStart(3,"0"),b:String(b).padStart(3,"0"),up,low,name:hex[up+low],move:m===0?6:m}}
+function liuyao(){return yaoNames.map((name,i)=>{const coins=Array.from({length:3},()=>rnd(2)===0?2:3),value=coins.reduce((a,b)=>a+b,0);const meta={6:["老陰","陰",true],7:["少陽","陽",false],8:["少陰","陰",false],9:["老陽","陽",true]}[value];return{position:i+1,name,coins,value,type:meta[0],yinYang:meta[1],changing:meta[2]}})}
+
+function shortName(name){const ms={"魔術師":"魔術","女祭司":"女祭","命運之輪":"命輪","倒吊人":"吊人"},cs={"侍者":"侍","騎士":"騎","皇后":"后","國王":"王"};if(ms[name])return ms[name];for(const suit of suits){if(name.startsWith(suit)){const rank=name.slice(1);return suit+(cs[rank]||rank)}}return name}
 function tarotHTML(c){return `<div class="cards">${c.map(x=>`<div class="card"><span class="small">第 ${x.i} 張</span><span class="name">${esc(shortName(x.name))}</span><span class="${x.rev?"rev":"up"}">${x.rev?"逆位":"正位"}</span></div>`).join("")}</div>`}
 function tarotText(c){return c.map(x=>`${shortName(x.name)}${x.rev?"逆":"正"}`).join("，")}
 function plumHTML(p){return `<div class="nums"><div class="num">${p.a}</div><div class="num">${p.b}</div></div><div class="detail"><strong>本卦：${p.name}</strong><br>上卦：${p.up}<br>下卦：${p.low}<br>動爻：第 ${p.move} 爻</div>`}
-function plumText(p){return `梅花易數｜雙數起卦\n${p.a}，${p.b}\n本卦：${p.name}\n上卦：${p.up}\n下卦：${p.low}\n動爻：第 ${p.move} 爻\n取卦規則：A÷8→上卦；B÷8→下卦；(A+B)÷6→動爻；餘0分別視為坤／第6爻`}
-function finish(tar=null,pl=null){let t=time(),q=$("question").value.trim()||"（未填題目）",h=[],x=[`題目：${q}`,t];if(tar){h.push(`<div class="title" style="margin-top:12px">🃏 塔羅（${tar.length} 張）</div>${tarotHTML(tar)}`);x.push(`塔羅（${tar.length} 張）\n${tarotText(tar)}`)}if(pl){h.push(`<div class="title" style="margin-top:12px">☯ 梅花易數</div>${plumHTML(pl)}`);x.push(plumText(pl))}$("oneTime").textContent=t;$("oneResult").innerHTML=h.join("");oneText=x.join("\n");$("onePreview").textContent=oneText;$("onePreview").hidden=false;$("notice").textContent=""}
-$("drawTarot").onclick=()=>finish(tarot(+$("count").value));$("drawPlum").onclick=()=>finish(null,plum());$("drawBoth").onclick=()=>finish(tarot(+$("count").value),plum());
-function addQ(n=3){if($("batchList").children.length>=10)return $("batchNotice").textContent="最多 10 個題目。";let d=document.createElement("div");d.className="batchItem";d.dataset.id=++seq;d.innerHTML=`<div><label>題目</label><textarea class="bq" placeholder="輸入題目……"></textarea></div><div><label>抽幾張</label><select class="bc">${options(n)}</select></div><button class="remove secondary">×</button>`;d.querySelector(".remove").onclick=()=>{if($("batchList").children.length<=1)return;$("batchList").removeChild(d)};$("batchList").appendChild(d)}
-$("addQ").onclick=()=>addQ();$("clearQs").onclick=()=>{$$(".bq").forEach(x=>x.value="");$("batchNotice").textContent="已清空所有題目。"};
-function $$(q){return [...document.querySelectorAll(q)]}
-$("drawBatch").onclick=()=>{let items=$$(".batchItem").map((d,i)=>({i:i+1,q:d.querySelector(".bq").value.trim(),n:+d.querySelector(".bc").value})),bad=items.find(x=>!x.q);if(bad)return $("batchNotice").textContent=`第 ${bad.i} 題尚未輸入題目。`;let t=time(),res=items.map(x=>({...x,c:tarot(x.n)}));$("batchTime").textContent=t;$("batchResult").innerHTML=res.map(x=>`<div class="batchResult"><div class="batchQuestion"><strong>第 ${x.i} 題｜${esc(x.q)}</strong><span class="muted">${x.n} 張</span></div>${tarotHTML(x.c)}</div>`).join("");let out=[];res.forEach((x,i)=>{out.push(`${x.q}（${x.n} 張）`);if(i===0)out.push(t);out.push(tarotText(x.c))});batchText=out.join("\n");$("batchPreview").textContent=batchText;$("batchPreview").hidden=false;$("batchNotice").textContent=""};
-async function copy(txt,msgEl){if(!txt)return msgEl.textContent="請先抽取結果。";try{await navigator.clipboard.writeText(txt);msgEl.textContent="已複製結果。"}catch{msgEl.textContent="瀏覽器阻擋自動複製，請直接選取下方文字。"}}
-$("copyOne").onclick=()=>copy(oneText,$("notice"));$("copyBatch").onclick=()=>copy(batchText,$("batchNotice"));$("clearQuestion").onclick=()=>{$("question").value="";$("question").focus();$("notice").textContent="已清空題目。"};$("clearOne").onclick=()=>{$("oneResult").innerHTML='<div class="muted">尚未抽取。</div>';$("oneTime").textContent="";$("onePreview").hidden=true;oneText=""};$("clearBatch").onclick=()=>{$("batchResult").innerHTML='<div class="muted">尚未抽取。</div>';$("batchTime").textContent="";$("batchPreview").hidden=true;batchText=""};addQ(5);addQ(3);addQ(3)})();
-</script></body></html>
+function plumText(p){return `梅花易數｜雙數起卦\n${p.a}，${p.b}\n本卦：${p.name}\n上卦：${p.up}\n下卦：${p.low}\n動爻：第 ${p.move} 爻\n取卦規則：A%8→上卦；B%8→下卦；(A+B)%6→動爻；餘0分別視為坤／第6爻`}
+function liuyaoHTML(lines){return `<div class="yaos">${lines.map(x=>`<div class="yao"><strong>${x.name}</strong><span>${x.value} ${x.type}</span><span class="${x.changing?"moving":"stable"}">${x.changing?"動爻":"靜爻"}</span><span class="coins">${x.coins.map(v=>v===3?"陽(3)":"陰(2)").join(" / ")}</span></div>`).join("")}</div><div class="detail">順序：初爻 → 上爻；每爻三枚獨立公平銅錢，陰=2、陽=3。</div>`}
+function liuyaoText(lines){return `六爻｜三錢法\n${lines.map(x=>`${x.name}：${x.value} ${x.type}（${x.changing?"動":"靜"}）｜${x.coins.map(v=>v===3?"陽":"陰").join("/")}`).join("\n")}\n起卦規則：每爻三枚獨立公平銅錢；陰=2、陽=3；6老陰動、7少陽靜、8少陰靜、9老陽動；由初爻至上爻起卦`}
+
+function finish({tar=null,pl=null,liu=null}={}){
+  const t=time(),q=$("question").value.trim()||"（未填題目）",h=[],x=[`題目：${q}`,t];
+  if(tar){h.push(`<div class="title" style="margin-top:12px">🃏 Tarot（${tar.length} 張）</div>${tarotHTML(tar)}`);x.push(`Tarot（${tar.length} 張）\n${tarotText(tar)}`)}
+  if(pl){h.push(`<div class="title" style="margin-top:12px">☯ Meihua</div>${plumHTML(pl)}`);x.push(plumText(pl))}
+  if(liu){h.push(`<div class="title" style="margin-top:12px">☰ Liuyao｜三錢法</div>${liuyaoHTML(liu)}`);x.push(liuyaoText(liu))}
+  $("oneTime").textContent=t;$("oneResult").innerHTML=h.join("");oneText=x.join("\n");$("onePreview").textContent=oneText;$("onePreview").hidden=false;$("notice").textContent="";
+}
+$("drawTarot").onclick=()=>finish({tar:tarot(+$('count').value)});
+$("drawPlum").onclick=()=>finish({pl:plum()});
+$("drawLiuyao").onclick=()=>finish({liu:liuyao()});
+$("drawBoth").onclick=()=>finish({tar:tarot(+$('count').value),pl:plum()});
+
+function addQ(n=3){
+  if($("batchList").children.length>=10){$("batchNotice").textContent="最多 10 個題目。";return}
+  const d=document.createElement("div");d.className="batchItem";d.dataset.id=++seq;
+  d.innerHTML=`<div><label>題目</label><textarea class="bq" placeholder="輸入題目……"></textarea></div><div><label>抽幾張</label><select class="bc">${options(n)}</select></div><button class="remove secondary">×</button>`;
+  d.querySelector(".remove").onclick=()=>{if($("batchList").children.length>1)$("batchList").removeChild(d)};
+  $("batchList").appendChild(d);
+}
+$("addQ").onclick=()=>addQ();
+$("clearQs").onclick=()=>{$$(".bq").forEach(x=>x.value="");$("batchNotice").textContent="已清空所有題目。"};
+$("drawBatch").onclick=()=>{
+  const items=$$(".batchItem").map((d,i)=>({i:i+1,q:d.querySelector(".bq").value.trim(),n:+d.querySelector(".bc").value}));
+  const bad=items.find(x=>!x.q);if(bad){$("batchNotice").textContent=`第 ${bad.i} 題尚未輸入題目。`;return}
+  const t=time(),res=items.map(x=>({...x,c:tarot(x.n)}));$("batchTime").textContent=t;
+  $("batchResult").innerHTML=res.map(x=>`<div class="batchResult"><div class="batchQuestion"><strong>第 ${x.i} 題｜${esc(x.q)}</strong><span class="muted">${x.n} 張</span></div>${tarotHTML(x.c)}</div>`).join("");
+  const out=[];res.forEach((x,i)=>{out.push(`${x.q}（${x.n} 張）`);if(i===0)out.push(t);out.push(tarotText(x.c))});batchText=out.join("\n");$("batchPreview").textContent=batchText;$("batchPreview").hidden=false;$("batchNotice").textContent="";
+};
+async function copy(txt,msgEl){if(!txt){msgEl.textContent="請先抽取結果。";return}try{await navigator.clipboard.writeText(txt);msgEl.textContent="已複製結果。"}catch{msgEl.textContent="瀏覽器阻擋自動複製，請直接選取下方文字。"}}
+$("copyOne").onclick=()=>copy(oneText,$("notice"));$("copyBatch").onclick=()=>copy(batchText,$("batchNotice"));
+$("clearQuestion").onclick=()=>{$("question").value="";$("question").focus();$("notice").textContent="已清空題目。"};
+$("clearOne").onclick=()=>{$("oneResult").innerHTML='<div class="muted">尚未抽取。</div>';$("oneTime").textContent="";$("onePreview").hidden=true;oneText=""};
+$("clearBatch").onclick=()=>{$("batchResult").innerHTML='<div class="muted">尚未抽取。</div>';$("batchTime").textContent="";$("batchPreview").hidden=true;batchText=""};
+addQ(5);addQ(3);addQ(3);
+})();
+</script>
+</body>
+</html>

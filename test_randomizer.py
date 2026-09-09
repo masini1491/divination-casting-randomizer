@@ -1,3 +1,6 @@
+import json
+import subprocess
+import sys
 import unittest
 
 import randomizer
@@ -44,6 +47,63 @@ class RandomizerTests(unittest.TestCase):
             for lower in set(randomizer.TRIGRAM.values())
         }
         self.assertEqual(set(randomizer.HEXAGRAM), pairs)
+
+    def test_liuyao_coin_resolution_covers_four_line_values(self):
+        cases = {
+            (2, 2, 2): (6, "yin", True, "老陰"),
+            (3, 2, 2): (7, "yang", False, "少陽"),
+            (3, 3, 2): (8, "yin", False, "少陰"),
+            (3, 3, 3): (9, "yang", True, "老陽"),
+        }
+        for coins, expected in cases.items():
+            result = randomizer.resolve_liuyao_coin_values(coins)
+            self.assertEqual(
+                (result["value"], result["yin_yang"], result["changing"], result["line_type"]),
+                expected,
+            )
+            self.assertEqual(sum(result["coin_values"]), result["value"])
+
+    def test_liuyao_cast_has_six_bottom_to_top_lines(self):
+        result = randomizer.cast_liuyao_coins()
+        self.assertEqual(result["cast_method"], "three-coins")
+        self.assertEqual(result["line_order"], "bottom-to-top")
+        self.assertEqual(len(result["lines"]), 6)
+        self.assertEqual([line["position"] for line in result["lines"]], list(range(1, 7)))
+        self.assertEqual(
+            [line["position_name"] for line in result["lines"]],
+            list(randomizer.LIUYAO_POSITION_NAMES),
+        )
+        for line in result["lines"]:
+            self.assertEqual(len(line["coin_values"]), 3)
+            self.assertTrue(all(value in {2, 3} for value in line["coin_values"]))
+            self.assertEqual(sum(line["coin_values"]), line["value"])
+            self.assertIn(line["value"], {6, 7, 8, 9})
+            self.assertEqual(line["changing"], line["value"] in {6, 9})
+            self.assertEqual(line["yin_yang"], "yin" if line["value"] in {6, 8} else "yang")
+
+    def test_package_declares_supported_methods_and_versions(self):
+        payload = randomizer.package([randomizer.make_result("liuyao")])
+        self.assertEqual(payload["source"], "divination-casting-randomizer-python")
+        self.assertEqual(payload["algorithm_version"], "2")
+        self.assertEqual(payload["schema_version"], "4")
+        self.assertEqual(payload["supported_methods"], ["tarot", "plum", "liuyao"])
+
+    def test_liuyao_cli_json_is_parseable(self):
+        completed = subprocess.run(
+            [sys.executable, "randomizer.py", "liuyao", "--format", "json"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["results"][0]["method"], "liuyao")
+        self.assertEqual(len(payload["results"][0]["liuyao"]["lines"]), 6)
+
+    def test_invalid_liuyao_coin_values_rejected(self):
+        with self.assertRaises(ValueError):
+            randomizer.resolve_liuyao_coin_values([2, 3])
+        with self.assertRaises(ValueError):
+            randomizer.resolve_liuyao_coin_values([2, 3, 4])
 
     def test_invalid_tarot_count_rejected(self):
         with self.assertRaises(ValueError):
