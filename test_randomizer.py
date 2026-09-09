@@ -88,6 +88,59 @@ class RandomizerTests(unittest.TestCase):
         self.assertEqual(payload["schema_version"], "4")
         self.assertEqual(payload["supported_methods"], ["tarot", "plum", "liuyao"])
 
+    def test_generate_payload_import_api_batches_independent_results(self):
+        payload = randomizer.generate_payload("tarot", count=5, repeat=3, source_commit="abc123")
+        self.assertEqual(len(payload["results"]), 3)
+        self.assertEqual(payload["runtime_source_commit"], "abc123")
+        self.assertEqual([result["tarot"]["count"] for result in payload["results"]], [5, 5, 5])
+        for result in payload["results"]:
+            cards = result["tarot"]["cards"]
+            self.assertEqual(len(cards), 5)
+            self.assertEqual(len({card["full_name"] for card in cards}), 5)
+
+    def test_compact_ai_payload_preserves_tarot_fact(self):
+        full = randomizer.package([randomizer.make_result("tarot", 5)], source_commit="abc123")
+        compact = randomizer.compact_ai_payload(full)
+        self.assertEqual(compact["algorithm_version"], full["algorithm_version"])
+        self.assertEqual(compact["schema_version"], full["schema_version"])
+        self.assertEqual(compact["ai_schema_version"], "1")
+        self.assertEqual(compact["runtime_source_commit"], "abc123")
+        expected = [[card["full_name"], card["orientation"]] for card in full["results"][0]["tarot"]["cards"]]
+        self.assertEqual(compact["results"][0]["tarot"]["cards"], expected)
+
+    def test_compact_ai_payload_preserves_plum_fact(self):
+        full = randomizer.package([randomizer.make_result("plum")])
+        compact = randomizer.compact_ai_payload(full)
+        source = full["results"][0]["plum"]
+        projected = compact["results"][0]["plum"]
+        self.assertEqual(projected["a"], source["a"])
+        self.assertEqual(projected["b"], source["b"])
+        self.assertEqual(projected["hexagram"], source["hexagram"])
+        self.assertEqual(projected["moving_line"], source["moving_line"])
+
+    def test_compact_ai_payload_preserves_liuyao_raw_fact(self):
+        full = randomizer.package([randomizer.make_result("liuyao")])
+        compact = randomizer.compact_ai_payload(full)
+        source_lines = full["results"][0]["liuyao"]["lines"]
+        projected = compact["results"][0]["liuyao"]
+        self.assertEqual(projected["values"], [line["value"] for line in source_lines])
+        self.assertEqual(projected["coin_values"], [line["coin_values"] for line in source_lines])
+        self.assertEqual(projected["line_order"], "bottom-to-top")
+
+    def test_ai_json_cli_is_compact_and_parseable(self):
+        completed = subprocess.run(
+            [sys.executable, "randomizer.py", "tarot", "--count", "5", "--repeat", "3", "--format", "ai-json"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["ai_schema_version"], "1")
+        self.assertEqual(len(payload["results"]), 3)
+        self.assertNotIn("\n", completed.stdout.strip())
+        self.assertNotIn("rng", payload)
+        self.assertNotIn("supported_methods", payload)
+
     def test_liuyao_cli_json_is_parseable(self):
         completed = subprocess.run(
             [sys.executable, "randomizer.py", "liuyao", "--format", "json"],
