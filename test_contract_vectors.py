@@ -12,7 +12,7 @@ HTML = (ROOT / "index.html").read_text(encoding="utf-8")
 
 
 def _extract_json_array(name: str) -> list[str]:
-    match = re.search(rf"const {name}=(\[[^;]+\]);", HTML)
+    match = re.search(rf"(?:const\s+|,\s*){name}=(\[[^;]+?\])(?=,|;)", HTML)
     if not match:
         raise AssertionError(f"missing JS array: {name}")
     return json.loads(match.group(1))
