@@ -22,11 +22,12 @@ method engine / AI interpretation
 
 ## 入口
 
+- **線上 Web UI**：<https://tarot-plum-randomizer-masini1491-9205.vercel.app>
 - `index.html`：瀏覽器／手機 Web UI。
 - `randomizer.py`：Python / ChatGPT / AI runtime / CLI canonical implementation。
 - `test_randomizer.py`：標準庫 invariant tests。
 
-目前既有 Vercel 部署仍可使用舊 deployment URL；Repo rename 不要求立即更換部署網域。
+目前 Vercel deployment 仍沿用 Repo rename 前的 `tarot-plum-randomizer` URL；Repo rename 不影響既有部署網址的使用。
 
 ## Python / AI Runtime CLI
 
