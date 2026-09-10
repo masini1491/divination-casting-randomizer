@@ -15,5 +15,63 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Validate OpenAPI JSON
+        run: python -m json.tool openapi.json > /dev/null
       - name: Run unit and contract tests
         run: python -m unittest -v
+
+  production-smoke:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: python-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Wait for matching Vercel production deployment and smoke-test API
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          CAST_URL: https://tarot-plum-randomizer-masini1491-9205.vercel.app/api/cast
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.request
+
+          url = os.environ["CAST_URL"]
+          expected = os.environ["EXPECTED_SHA"]
+          body = json.dumps({"method": "tarot", "count": 3, "repeat": 1}).encode()
+          last = "no response"
+
+          for attempt in range(30):
+              request = urllib.request.Request(
+                  url,
+                  data=body,
+                  method="POST",
+                  headers={"Content-Type": "application/json"},
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=10) as response:
+                      payload = json.loads(response.read())
+                      cache_control = response.headers.get("Cache-Control", "")
+                      commit = payload.get("runtime_source_commit")
+                      cards = payload.get("results", [{}])[0].get("tarot", {}).get("cards", [])
+                      if (
+                          response.status == 200
+                          and "no-store" in cache_control
+                          and commit == expected
+                          and len(cards) == 3
+                          and payload.get("ai_schema_version") == "1"
+                      ):
+                          print(f"production smoke passed for {expected}")
+                          raise SystemExit(0)
+                      last = f"status={response.status} commit={commit} cards={len(cards)} cache={cache_control!r}"
+              except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError) as exc:
+                  last = repr(exc)
+              print(f"attempt {attempt + 1}/30 not ready: {last}")
+              time.sleep(5)
+
+          raise SystemExit(f"production smoke failed after retries: {last}")
+          PY
