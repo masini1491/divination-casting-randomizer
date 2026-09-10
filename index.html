@@ -99,6 +99,7 @@ const majors=["愚者","魔術師","女祭司","女皇","皇帝","教皇","戀�
 const ranks=["一","二","三","四","五","六","七","八","九","十","侍者","騎士","皇后","國王"], suits=["杖","杯","劍","錢"];
 const deck=[...majors,...suits.flatMap(s=>ranks.map(r=>s+r))];
 const tri={1:"乾",2:"兌",3:"離",4:"震",5:"巽",6:"坎",7:"艮",0:"坤"};
+const trigramBits={"111":"乾","110":"兌","101":"離","100":"震","011":"巽","010":"坎","001":"艮","000":"坤"};
 const hex={"乾乾":"乾為天","坤坤":"坤為地","坎震":"水雷屯","艮坎":"山水蒙","坎乾":"水天需","乾坎":"天水訟","坤坎":"地水師","坎坤":"水地比","巽乾":"風天小畜","乾兌":"天澤履","坤乾":"地天泰","乾坤":"天地否","乾離":"天火同人","離乾":"火天大有","坤艮":"地山謙","震坤":"雷地豫","兌震":"澤雷隨","艮巽":"山風蠱","坤兌":"地澤臨","巽坤":"風地觀","離震":"火雷噬嗑","艮離":"山火賁","艮坤":"山地剝","坤震":"地雷復","乾震":"天雷無妄","艮乾":"山天大畜","艮震":"山雷頤","兌巽":"澤風大過","坎坎":"坎為水","離離":"離為火","兌艮":"澤山咸","震巽":"雷風恆","乾艮":"天山遯","震乾":"雷天大壯","離坤":"火地晉","坤離":"地火明夷","巽離":"風火家人","離兌":"火澤睽","坎艮":"水山蹇","震坎":"雷水解","艮兌":"山澤損","巽震":"風雷益","兌乾":"澤天夬","乾巽":"天風姤","兌坤":"澤地萃","坤巽":"地風升","兌坎":"澤水困","坎巽":"水風井","兌離":"澤火革","離巽":"火風鼎","震震":"震為雷","艮艮":"艮為山","巽艮":"風山漸","震兌":"雷澤歸妹","震離":"雷火豐","離艮":"火山旅","巽巽":"巽為風","兌兌":"兌為澤","巽坎":"風水渙","坎兌":"水澤節","巽兌":"風澤中孚","震艮":"雷山小過","坎離":"水火既濟","離坎":"火水未濟"};
 const yaoNames=["初爻","二爻","三爻","四爻","五爻","上爻"];
 const yaoPositionTokens={1:"初",2:"二",3:"三",4:"四",5:"五",6:"上"};
@@ -124,6 +125,9 @@ function plum(){const a=rnd(1000),b=rnd(1000),m=(a+b)%6,up=tri[a%8],low=tri[b%8]
 function liuyao(){return yaoNames.map((name,i)=>{const coins=Array.from({length:3},()=>rnd(2)===0?2:3),value=coins.reduce((a,b)=>a+b,0);const meta={6:["老陰","陰",true],7:["少陽","陽",false],8:["少陰","陰",false],9:["老陽","陽",true]}[value];return{position:i+1,name,coins,value,type:meta[0],yinYang:meta[1],changing:meta[2]}})}
 function liuyaoDisplay(lines){return [...lines].reverse()}
 function yaoLabel(x){const n=x.yinYang==="陽"?"九":"六";if(x.position===1)return `初${n}`;if(x.position===6)return `上${n}`;return `${n}${yaoPositionTokens[x.position]}`}
+function liuyaoBits(lines){return lines.map(x=>x.yinYang==="陽"?"1":"0").join("")}
+function liuyaoGuaName(bits){const lower=trigramBits[bits.slice(0,3)],upper=trigramBits[bits.slice(3,6)];return hex[upper+lower]}
+function liuyaoGua(lines){const base=liuyaoBits(lines),changed=[...base].map((b,i)=>lines[i].changing?(b==="1"?"0":"1"):b).join(""),hasMoving=lines.some(x=>x.changing);return{ben:liuyaoGuaName(base),zhi:hasMoving?liuyaoGuaName(changed):null}}
 
 function shortName(name){const ms={"魔術師":"魔術","女祭司":"女祭","命運之輪":"命輪","倒吊人":"吊人"},cs={"侍者":"侍","騎士":"騎","皇后":"后","國王":"王"};if(ms[name])return ms[name];for(const suit of suits){if(name.startsWith(suit)){const rank=name.slice(1);return suit+(cs[rank]||rank)}}return name}
 function tarotHTML(c){return `<div class="cards">${c.map(x=>`<div class="card"><span class="small">第 ${x.i} 張</span><span class="name">${esc(shortName(x.name))}</span><span class="${x.rev?"rev":"up"}">${x.rev?"逆位":"正位"}</span></div>`).join("")}</div>`}
@@ -136,8 +140,10 @@ ${p.a}，${p.b}\
 下卦：${p.low}\
 動爻：第 ${p.move} 爻\
 取卦規則：A%8→上卦；B%8→下卦；(A+B)%6→動爻；餘0分別視為坤／第6爻`}
-function liuyaoHTML(lines){const display=liuyaoDisplay(lines);return `<div class="yaos">${display.map(x=>`<div class="yao"><strong title="${x.name}">${yaoLabel(x)}</strong><span>${x.value} ${x.type}</span><span class="${x.changing?"moving":"stable"}">${x.changing?"動爻":"靜爻"}</span><span class="coins">${x.coins.map(v=>v===3?"陽(3)":"陰(2)").join(" / ")}</span></div>`).join("")}</div><div class="detail">顯示順序：上爻 → 初爻；起卦／原始資料順序：初爻 → 上爻。每爻三枚獨立公平銅錢，陰=2、陽=3。</div>`}
-function liuyaoText(lines){const display=liuyaoDisplay(lines);return `六爻｜三錢法\
+function liuyaoHTML(lines){const display=liuyaoDisplay(lines),gua=liuyaoGua(lines);return `<div class="detail"><strong>本卦：${gua.ben}</strong><br>${gua.zhi?`<strong>之卦：${gua.zhi}</strong>`:"之卦：無（無動爻）"}</div><div class="yaos">${display.map(x=>`<div class="yao"><strong title="${x.name}">${yaoLabel(x)}</strong><span>${x.value} ${x.type}</span><span class="${x.changing?"moving":"stable"}">${x.changing?"動爻":"靜爻"}</span><span class="coins">${x.coins.map(v=>v===3?"陽(3)":"陰(2)").join(" / ")}</span></div>`).join("")}</div><div class="detail">顯示順序：上爻 → 初爻；起卦／原始資料順序：初爻 → 上爻。每爻三枚獨立公平銅錢，陰=2、陽=3。</div>`}
+function liuyaoText(lines){const display=liuyaoDisplay(lines),gua=liuyaoGua(lines);return `六爻｜三錢法\
+本卦：${gua.ben}\
+之卦：${gua.zhi||"無（無動爻）"}\
 ${display.map(x=>`${yaoLabel(x)}：${x.value} ${x.type}（${x.changing?"動":"靜"}）｜${x.coins.map(v=>v===3?"陽":"陰").join("/")}`).join("\
 ")}\
 顯示順序：上爻→初爻；起卦／原始資料順序：初爻→上爻；每爻三枚獨立公平銅錢；陰=2、陽=3；6老陰動、7少陽靜、8少陰靜、9老陽動`}
