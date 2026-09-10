@@ -15,10 +15,10 @@ button{border:0;border-radius:10px;padding:12px 15px;min-height:46px;font:inheri
 .methods{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}.cardbox{border:1px solid var(--line);border-radius:14px;background:#fff;padding:14px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:14px}.utils{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}.rule{background:#f5f1eb;border-radius:10px;padding:11px;line-height:1.6;font-size:.92rem}
 .resultTitle{border-top:1px solid var(--line);padding-top:16px;margin-top:18px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin-top:10px}.card{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px;min-height:105px;display:flex;flex-direction:column;justify-content:space-between}.small{font-size:.82rem;color:var(--muted)}.name{font-size:1.08rem;font-weight:700}.up{color:#397437}.rev{color:#a34737}
 .nums{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.num{flex:1 1 110px;text-align:center;border:2px solid var(--green);border-radius:12px;background:#fff;padding:12px;font-size:1.8rem;font-family:monospace}.detail,.preview{background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;margin-top:10px;line-height:1.7}.preview{white-space:pre-wrap;border-style:dashed;overflow-wrap:anywhere}
-.yaos{display:grid;gap:8px;margin-top:10px}.yao{display:grid;grid-template-columns:72px 80px 90px 1fr;gap:8px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px}.moving{font-weight:700;color:#a34737}.stable{color:#397437}
+.guaSummary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.guaBox{background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px}.guaBox strong{font-size:1.08rem}.liuyaoWrap{overflow-x:auto;margin-top:10px}.liuyaoTable{width:100%;border-collapse:collapse;min-width:720px;background:#fff}.liuyaoTable th,.liuyaoTable td{border:1px solid var(--line);padding:10px;text-align:center;vertical-align:middle}.liuyaoTable th{background:#f5f1eb;white-space:nowrap}.lineGlyph{font-family:monospace;font-size:1.2rem;letter-spacing:.04em;white-space:nowrap}.moving{font-weight:700;color:#a34737}.stable{color:#397437}
 .batchList{display:grid;gap:10px;margin-top:12px}.batchItem{display:grid;grid-template-columns:minmax(0,1fr) 105px 44px;gap:8px;align-items:end;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}.batchItem textarea{min-height:70px}.batchResult{background:#f9f7f2;border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}.remove{width:44px;padding:0}.notice{min-height:1.2em;margin-top:8px;color:var(--dark)}[hidden]{display:none!important}
-@media(max-width:820px){.methods{grid-template-columns:1fr}.actions{grid-template-columns:1fr 1fr}.yao{grid-template-columns:64px 70px 80px 1fr}}
-@media(max-width:560px){.wrap{padding:16px 10px 30px}.box{padding:14px}.actions,.row2{grid-template-columns:1fr}.utils{display:grid;grid-template-columns:1fr}.batchItem{grid-template-columns:1fr}.batchItem .remove{width:100%}.yao{grid-template-columns:1fr 1fr}.yao .coins{grid-column:1/-1}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:820px){.methods{grid-template-columns:1fr}.actions{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.wrap{padding:16px 10px 30px}.box{padding:14px}.actions,.row2,.guaSummary{grid-template-columns:1fr}.utils{display:grid;grid-template-columns:1fr}.batchItem{grid-template-columns:1fr}.batchItem .remove{width:100%}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -128,6 +128,9 @@ function yaoLabel(x){const n=x.yinYang==="陽"?"九":"六";if(x.position===1)ret
 function liuyaoBits(lines){return lines.map(x=>x.yinYang==="陽"?"1":"0").join("")}
 function liuyaoGuaName(bits){const lower=trigramBits[bits.slice(0,3)],upper=trigramBits[bits.slice(3,6)];return hex[upper+lower]}
 function liuyaoGua(lines){const base=liuyaoBits(lines),changed=[...base].map((b,i)=>lines[i].changing?(b==="1"?"0":"1"):b).join(""),hasMoving=lines.some(x=>x.changing);return{ben:liuyaoGuaName(base),zhi:hasMoving?liuyaoGuaName(changed):null}}
+function lineGlyph(yinYang){return yinYang==="陽"?"━━━━━━":"━━ ━━"}
+function changedYinYang(x){if(!x.changing)return x.yinYang;return x.yinYang==="陽"?"陰":"陽"}
+function changeMark(x){return x.value===9?"○":x.value===6?"×":""}
 
 function shortName(name){const ms={"魔術師":"魔術","女祭司":"女祭","命運之輪":"命輪","倒吊人":"吊人"},cs={"侍者":"侍","騎士":"騎","皇后":"后","國王":"王"};if(ms[name])return ms[name];for(const suit of suits){if(name.startsWith(suit)){const rank=name.slice(1);return suit+(cs[rank]||rank)}}return name}
 function tarotHTML(c){return `<div class="cards">${c.map(x=>`<div class="card"><span class="small">第 ${x.i} 張</span><span class="name">${esc(shortName(x.name))}</span><span class="${x.rev?"rev":"up"}">${x.rev?"逆位":"正位"}</span></div>`).join("")}</div>`}
@@ -140,13 +143,17 @@ ${p.a}，${p.b}\
 下卦：${p.low}\
 動爻：第 ${p.move} 爻\
 取卦規則：A%8→上卦；B%8→下卦；(A+B)%6→動爻；餘0分別視為坤／第6爻`}
-function liuyaoHTML(lines){const display=liuyaoDisplay(lines),gua=liuyaoGua(lines);return `<div class="detail"><strong>本卦：${gua.ben}</strong><br>${gua.zhi?`<strong>之卦：${gua.zhi}</strong>`:"之卦：無（無動爻）"}</div><div class="yaos">${display.map(x=>`<div class="yao"><strong title="${x.name}">${yaoLabel(x)}</strong><span>${x.value} ${x.type}</span><span class="${x.changing?"moving":"stable"}">${x.changing?"動爻":"靜爻"}</span><span class="coins">${x.coins.map(v=>v===3?"陽(3)":"陰(2)").join(" / ")}</span></div>`).join("")}</div><div class="detail">顯示順序：上爻 → 初爻；起卦／原始資料順序：初爻 → 上爻。每爻三枚獨立公平銅錢，陰=2、陽=3。</div>`}
+function liuyaoHTML(lines){
+  const display=liuyaoDisplay(lines),gua=liuyaoGua(lines);
+  const rows=display.map(x=>`<tr><td><strong>${yaoLabel(x)}</strong></td><td><span class="lineGlyph">${lineGlyph(x.yinYang)}</span></td><td>${x.value} ${x.type}</td><td class="${x.changing?"moving":"stable"}">${x.changing?`${changeMark(x)} 動爻`:"靜爻"}</td><td><span class="lineGlyph">${x.changing?lineGlyph(changedYinYang(x)):"—"}</span></td><td>${x.coins.map(v=>v===3?"陽(3)":"陰(2)").join(" / ")}</td></tr>`).join("");
+  return `<div class="guaSummary"><div class="guaBox"><span class="small">本卦</span><br><strong>${gua.ben}</strong></div><div class="guaBox"><span class="small">之卦</span><br><strong>${gua.zhi||"無（無動爻）"}</strong></div></div><div class="liuyaoWrap"><table class="liuyaoTable"><thead><tr><th>爻位</th><th>本卦</th><th>爻值</th><th>動靜</th><th>之卦變爻</th><th>三錢</th></tr></thead><tbody>${rows}</tbody></table></div><div class="detail">顯示順序：上爻 → 初爻；起卦／原始資料順序：初爻 → 上爻。六獸、六親、世應、納甲五行、旬空／月破／日沖與伏神屬 deterministic 排盤層，應由 AI Divination Playbook 的 Liuyao runtime 產生；Randomizer Web UI 不自行重複計算。</div>`
+}
 function liuyaoText(lines){const display=liuyaoDisplay(lines),gua=liuyaoGua(lines);return `六爻｜三錢法\
 本卦：${gua.ben}\
 之卦：${gua.zhi||"無（無動爻）"}\
-${display.map(x=>`${yaoLabel(x)}：${x.value} ${x.type}（${x.changing?"動":"靜"}）｜${x.coins.map(v=>v===3?"陽":"陰").join("/")}`).join("\
+${display.map(x=>`${yaoLabel(x)}：${lineGlyph(x.yinYang)}｜${x.value} ${x.type}（${x.changing?"動":"靜"}）${x.changing?` → ${lineGlyph(changedYinYang(x))}`:""}｜${x.coins.map(v=>v===3?"陽":"陰").join("/")}`).join("\
 ")}\
-顯示順序：上爻→初爻；起卦／原始資料順序：初爻→上爻；每爻三枚獨立公平銅錢；陰=2、陽=3；6老陰動、7少陽靜、8少陰靜、9老陽動`}
+顯示順序：上爻→初爻；起卦／原始資料順序：初爻→上爻；完整六獸／六親／世應／納甲／伏神由 Playbook deterministic runtime 補盤`}
 
 function finish({tar=null,pl=null,liu=null}={}){
   const t=time(),q=$("question").value.trim()||"（未填題目）",h=[],x=[`題目：${q}`,t];
