@@ -1,0 +1,110 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Divination Casting API",
+    "version": "1.0.0",
+    "description": "Controlled stochastic casting transport. The API accepts only casting parameters and never divination question text."
+  },
+  "servers": [
+    {
+      "url": "https://tarot-plum-randomizer-masini1491-9205.vercel.app"
+    }
+  ],
+  "paths": {
+    "/api/cast": {
+      "post": {
+        "operationId": "castDivination",
+        "summary": "Generate canonical Tarot, Meihua, or Liuyao raw casting facts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CastRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compact AI casting payload",
+            "headers": {
+              "Cache-Control": {
+                "schema": {"type": "string"},
+                "description": "Always no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CastResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid JSON or unsupported parameters"
+          },
+          "413": {
+            "description": "Request body too large"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CastRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["method"],
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": ["tarot", "plum", "liuyao"]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24,
+            "default": 3,
+            "description": "Tarot card count. Ignored by non-Tarot methods."
+          },
+          "repeat": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 1
+          }
+        }
+      },
+      "CastResponse": {
+        "type": "object",
+        "required": [
+          "source",
+          "algorithm_version",
+          "schema_version",
+          "ai_schema_version",
+          "runtime_source_commit",
+          "generated_at_taipei",
+          "timezone",
+          "results"
+        ],
+        "properties": {
+          "source": {"type": "string"},
+          "algorithm_version": {"type": "string"},
+          "schema_version": {"type": "string"},
+          "ai_schema_version": {"type": "string"},
+          "runtime_source_commit": {"type": "string"},
+          "generated_at_taipei": {"type": "string"},
+          "timezone": {"type": "string", "const": "Asia/Taipei"},
+          "results": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "object"}
+          }
+        }
+      }
+    }
+  }
+}
