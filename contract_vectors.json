@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "tarot": {
+    "deck_size": 78,
+    "deck_sha256_lf": "8a537e362dffe2c3dd13925058f749a08662cfd171a046cf01d858712da1e894",
+    "count_min": 1,
+    "count_max": 24,
+    "orientations": ["正", "逆"]
+  },
+  "plum": {
+    "vectors": [
+      {"a": 0, "b": 0, "upper": "坤", "lower": "坤", "hexagram": "坤為地", "moving_line": 6},
+      {"a": 1, "b": 1, "upper": "乾", "lower": "乾", "hexagram": "乾為天", "moving_line": 2},
+      {"a": 175, "b": 196, "upper": "艮", "lower": "震", "hexagram": "山雷頤", "moving_line": 5}
+    ]
+  },
+  "liuyao": {
+    "line_vectors": [
+      {"coins": [2, 2, 2], "value": 6, "yin_yang": "yin", "changing": true, "line_type": "老陰"},
+      {"coins": [3, 2, 2], "value": 7, "yin_yang": "yang", "changing": false, "line_type": "少陽"},
+      {"coins": [3, 3, 2], "value": 8, "yin_yang": "yin", "changing": false, "line_type": "少陰"},
+      {"coins": [3, 3, 3], "value": 9, "yin_yang": "yang", "changing": true, "line_type": "老陽"}
+    ],
+    "line_order": "bottom-to-top"
+  }
+}
