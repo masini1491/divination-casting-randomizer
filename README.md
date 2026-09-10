@@ -23,11 +23,43 @@ method engine / AI interpretation
 ## 入口
 
 - **線上 Web UI**：<https://tarot-plum-randomizer-masini1491-9205.vercel.app>
+- **Production Casting API**：<https://tarot-plum-randomizer-masini1491-9205.vercel.app/api/cast>
 - `index.html`：瀏覽器／手機 Web UI。
 - `randomizer.py`：Python / ChatGPT / AI runtime / CLI canonical implementation。
+- `API.md`：HTTP API contract 與使用邊界。
+- `openapi.json`：OpenAPI 3.1 machine-readable contract。
 - `test_randomizer.py`：標準庫 invariant tests。
 
 目前 Vercel deployment 仍沿用 Repo rename 前的 `tarot-plum-randomizer` URL；Repo rename 不影響既有部署網址的使用。
+
+## HTTP Casting API
+
+Production endpoint：
+
+```text
+POST https://tarot-plum-randomizer-masini1491-9205.vercel.app/api/cast
+Content-Type: application/json
+```
+
+最小 Tarot request：
+
+```json
+{"method":"tarot","count":3,"repeat":1}
+```
+
+受控 HTTP API 只接受：
+
+- `method`: `tarot` / `plum` / `liuyao`
+- `count`: `1..24`，預設 `3`
+- `repeat`: `1..20`，預設 `1`
+
+`/api/cast` 只是 `randomizer.py` 的薄 HTTP transport adapter，不維護第二份 RNG。成功時直接回傳 canonical runtime 的 `compact_ai_payload()`，其中包含 algorithm/schema identity、`runtime_source_commit`、Taipei timestamp 與最低充分的 raw Draw / Cast Fact。
+
+API **不接收占卜題目或 reading context**。未知欄位會被拒絕，因此 `question`、人物姓名、關係內容、健康內容或其他解讀上下文都不應送到 Randomizer API。Legacy `both` 只保留於既有 CLI compatibility，不屬於 HTTP API contract。
+
+所有 API response 都設定 `Cache-Control: no-store`。Request body 上限為 1024 bytes，單次 `repeat` 上限為 20；這些是 request bounds，不代表跨 Vercel Function instance 的 durable rate limit。
+
+完整 human-readable contract 見 [`API.md`](API.md)；machine-readable schema 見 [`openapi.json`](openapi.json)。
 
 ## Python / AI Runtime CLI
 
@@ -245,8 +277,15 @@ Randomizer 支援某個 casting method，**不代表 Playbook 已經正式啟用
 
 ```text
 .
+├── api/
+│   └── cast.py
 ├── index.html
 ├── randomizer.py
+├── API.md
+├── openapi.json
+├── test_api.py
+├── test_api_http.py
+├── test_contract_vectors.py
 ├── test_randomizer.py
 └── README.md
 ```
