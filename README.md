@@ -1,14 +1,26 @@
 # Divination Casting Randomizer｜占卜抽牌／起卦隨機器
 
-一套給人類、ChatGPT／AI runtime 與其他程式使用的 **canonical stochastic casting tool**。
+> **RETIRED / COMPATIBILITY-ONLY**
+>
+> 本 Repository 已完成遷移並停止新功能開發。新的 canonical stochastic runtime、測試、API/Web 維護與 production deployment authority 已移至：
+>
+> - Repository：`masini1491/ai-divination-playbook`
+> - Canonical implementation：`runtime/casting/randomizer.py`
+> - Canonical package root：`runtime/casting/`
+> - Current production：<https://ai-divination-playbook-casting-masini1491-9205.vercel.app>
+> - Current production API：<https://ai-divination-playbook-casting-masini1491-9205.vercel.app/api/cast>
+>
+> 本 Repo 保留完整 Git history、既有 commit/blob identities、rollback 與 compatibility 用途，以確保歷史 `runtime_source_commit` provenance 仍可解析。請勿刪除或重寫歷史。未來功能、修正與 contract 變更只在 `ai-divination-playbook` 進行。
 
-目前正式支援：
+一套給人類、ChatGPT／AI runtime 與其他程式使用的 stochastic casting tool 歷史／相容版本。
+
+此 Repo 最後的 canonical legacy runtime 支援：
 
 - **Tarot**：完整 78 張牌、每題 fresh shuffle、獨立正逆位。
 - **Meihua**：雙數 A/B 起卦。
 - **Liuyao**：三錢法六爻起卦，六爻由初爻至上爻依序產生。
 
-本 Repo 只負責「需要隨機性的原始 Draw / Cast Fact」。它**不負責**完整六爻納甲、世應、六親、六神、奇門／六壬排盤或 AI 解讀；這些應由各自 deterministic engine／Playbook 負責。
+本 Repo 只負責「需要隨機性的原始 Draw / Cast Fact」。它**不負責**完整六爻納甲、世應、六親、六神、奇門／六壬排盤或 AI 解讀；這些由各自 deterministic engine／Playbook 負責。
 
 ```text
 stochastic acquisition
@@ -22,19 +34,34 @@ method engine / AI interpretation
 
 ## 入口
 
-- **線上 Web UI**：<https://tarot-plum-randomizer-masini1491-9205.vercel.app>
-- **Production Casting API**：<https://tarot-plum-randomizer-masini1491-9205.vercel.app/api/cast>
-- `index.html`：瀏覽器／手機 Web UI。
-- `randomizer.py`：Python / ChatGPT / AI runtime / CLI canonical implementation。
-- `API.md`：HTTP API contract 與使用邊界。
-- `openapi.json`：OpenAPI 3.1 machine-readable contract。
-- `test_randomizer.py`：標準庫 invariant tests。
+### Current canonical production
 
-目前 Vercel deployment 仍沿用 Repo rename 前的 `tarot-plum-randomizer` URL；Repo rename 不影響既有部署網址的使用。
+- **Web UI**：<https://ai-divination-playbook-casting-masini1491-9205.vercel.app>
+- **Production Casting API**：<https://ai-divination-playbook-casting-masini1491-9205.vercel.app/api/cast>
+- Source：`masini1491/ai-divination-playbook/runtime/casting/`
+
+### Legacy compatibility surface
+
+- **Legacy Web UI**：<https://tarot-plum-randomizer-masini1491-9205.vercel.app>
+- **Legacy Casting API**：<https://tarot-plum-randomizer-masini1491-9205.vercel.app/api/cast>
+- `index.html`：legacy Web UI snapshot。
+- `randomizer.py`：legacy Python / CLI snapshot。
+- `API.md`：legacy HTTP API contract snapshot。
+- `openapi.json`：legacy OpenAPI 3.1 snapshot。
+- `test_randomizer.py`：legacy invariant tests。
+
+Legacy URL 保留是為了 compatibility／rollback，不代表此 Repo 仍是 current production authority。
 
 ## HTTP Casting API
 
-Production endpoint：
+Current production endpoint：
+
+```text
+POST https://ai-divination-playbook-casting-masini1491-9205.vercel.app/api/cast
+Content-Type: application/json
+```
+
+Legacy compatibility endpoint：
 
 ```text
 POST https://tarot-plum-randomizer-masini1491-9205.vercel.app/api/cast
@@ -59,9 +86,11 @@ API **不接收占卜題目或 reading context**。未知欄位會被拒絕，�
 
 所有 API response 都設定 `Cache-Control: no-store`。Request body 上限為 1024 bytes，單次 `repeat` 上限為 20；這些是 request bounds，不代表跨 Vercel Function instance 的 durable rate limit。
 
-完整 human-readable contract 見 [`API.md`](API.md)；machine-readable schema 見 [`openapi.json`](openapi.json)。
+完整 legacy human-readable contract 見 [`API.md`](API.md)；machine-readable schema 見 [`openapi.json`](openapi.json)。Current contract 請以 `ai-divination-playbook/runtime/casting/` 為準。
 
 ## Python / AI Runtime CLI
+
+此處 `randomizer.py` 為 legacy compatibility snapshot；current canonical implementation 位於 `ai-divination-playbook/runtime/casting/randomizer.py`。
 
 `randomizer.py` 僅使用 Python 標準庫。
 
@@ -118,7 +147,7 @@ Top-level metadata 包含：
 - RNG 說明
 - `results`
 
-`source = divination-casting-randomizer-python` 表示結果來自 canonical runtime execution，而不是語言模型自行生成。
+`source = divination-casting-randomizer-python` 是 logical runtime identity；Repo relocation 不改寫既有歷史 identity。
 
 ## Canonical Randomness
 
@@ -212,7 +241,7 @@ JSON 會保留每爻的原始 `coin_values`、`coin_faces`、`value`、陰陽、
 
 ## Version Semantics
 
-目前：
+Legacy snapshot：
 
 ```text
 algorithm_version: 2
@@ -223,9 +252,11 @@ schema_version: 4
 - schema v4：新增 `supported_methods` 與 Liuyao result shape。
 - 只改 README、UI 文案或其他不改變 runtime result contract 的內容，不應升 `algorithm_version`。
 
+此 Repo retirement pointer 不改 algorithm/schema。後續版本變更只在 `ai-divination-playbook` 進行。
+
 ## Web UI
 
-目前 Web UI 支援：
+Legacy Web UI 支援：
 
 - 多題連續 Tarot。
 - 單題 Tarot。
@@ -246,46 +277,19 @@ yin=2 / yang=3
 
 ## 驗證
 
-執行：
+Legacy snapshot 可執行：
 
 ```bash
-python -m unittest -v test_randomizer.py
+python -m unittest -v
 ```
 
-最低 invariants 包含：
+這些測試保留作 rollback／historical verification；current maintenance CI 位於 `ai-divination-playbook`。
 
-- 78 張牌唯一。
-- Tarot 1～24 boundary。
-- 單題無重複牌。
-- 多題獨立 draw shape。
-- Meihua A/B、動爻與 64 卦 mapping。
-- Liuyao 四種爻值 mapping。
-- Liuyao 六爻由初爻至上爻。
-- 每爻三枚 coin value 只能為 2／3，且總和等於 6／7／8／9。
-- 6／9 必為動爻；7／8 必為靜爻。
-- Liuyao CLI JSON 可解析。
-- package 版本與 `supported_methods` 正確。
+## Retirement / provenance policy
 
-## 與 AI Divination Playbook 的責任分工
-
-- **本 Repo**：RNG、raw Tarot / Meihua / Liuyao Draw-Cast Fact、CLI/Web 與結果格式。
-- **`masini1491/ai-divination-playbook`**：自然語言題目、method routing、Runtime governance、reading lifecycle、record、interpretation / reconciliation。
-
-Randomizer 支援某個 casting method，**不代表 Playbook 已經正式啟用該方法的自動 routing／解讀**。方法要進入 Playbook，仍需有清楚的 method owner、judgment function、deterministic downstream engine boundary 與 behavioral regression。
-
-## 專案結構
-
-```text
-.
-├── api/
-│   └── cast.py
-├── index.html
-├── randomizer.py
-├── API.md
-├── openapi.json
-├── test_api.py
-├── test_api_http.py
-├── test_contract_vectors.py
-├── test_randomizer.py
-└── README.md
-```
+- 此 Repo 不再接受新 feature development。
+- Current runtime、API、Web、tests 與 contract maintenance 均在 `masini1491/ai-divination-playbook`。
+- Git history 與既有 commits 保留，供歷史 `runtime_source_commit` 查核。
+- `17cc4c84fd5c09b60de721b671c1d6511ab3d0e9` 是 monorepo migration 所 pin 的 legacy source baseline。
+- 不刪除 Repo；若設為 GitHub Archived，仍保留 read-only history。
+- rollback 若需要，可依 migration contract 暫時重新部署已知良好的 legacy commit；這不恢復此 Repo 的 feature authority。
